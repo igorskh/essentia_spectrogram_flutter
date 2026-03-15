@@ -9,22 +9,10 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 object AudioDecoder {
-    /**
-     * Decodes any audio file (MP3, AAC, WAV, OGG, FLAC, etc.) into
-     * a FloatArray of normalized PCM samples in the range [-1.0, 1.0].
-     *
-     * @param context   Android context
-     * @param filePath  Absolute path to the audio file
-     * @return FloatArray of waveform amplitude values
-     */
-    fun decodeAudioFile(
-        context: Context,
-        filePath: String
-    ): FloatArray {
+    fun decodeAudioFile(context: Context, filePath: String): FloatArray {
         val extractor = MediaExtractor()
         extractor.setDataSource(filePath)
 
-        // Find the first audio track
         var audioTrackIndex = -1
         var mediaFormat: MediaFormat? = null
 
@@ -48,57 +36,84 @@ object AudioDecoder {
         codec.configure(mediaFormat, null, null, 0)
         codec.start()
 
-        val pcmSamples = mutableListOf<Short>()
+        // Use a list of primitive arrays to avoid boxing java.lang.Short
+        val floatChunks = mutableListOf<FloatArray>()
+        var totalSamples = 0
+        
         val bufferInfo = MediaCodec.BufferInfo()
-        var isEOS = false
+        var inputEOS = false
+        var outputEOS = false
 
-        while (!isEOS) {
-            // --- Feed compressed data into the decoder ---
-            val inputIndex = codec.dequeueInputBuffer(10_000L)
-            if (inputIndex >= 0) {
-                val inputBuffer: ByteBuffer = codec.getInputBuffer(inputIndex)!!
-                val sampleSize = extractor.readSampleData(inputBuffer, 0)
+        while (!outputEOS) {
+            // --- Feed compressed data ---
+            if (!inputEOS) {
+                val inputIndex = codec.dequeueInputBuffer(10_000L)
+                if (inputIndex >= 0) {
+                    val inputBuffer = codec.getInputBuffer(inputIndex)!!
+                    val sampleSize = extractor.readSampleData(inputBuffer, 0)
 
-                if (sampleSize < 0) {
-                    // End of stream
-                    codec.queueInputBuffer(
-                        inputIndex, 0, 0, 0L,
-                        MediaCodec.BUFFER_FLAG_END_OF_STREAM
-                    )
-                    isEOS = true
-                } else {
-                    codec.queueInputBuffer(
-                        inputIndex, 0, sampleSize,
-                        extractor.sampleTime, 0
-                    )
-                    extractor.advance()
+                    if (sampleSize < 0) {
+                        codec.queueInputBuffer(
+                            inputIndex, 0, 0, 0L,
+                            MediaCodec.BUFFER_FLAG_END_OF_STREAM
+                        )
+                        inputEOS = true
+                    } else {
+                        codec.queueInputBuffer(
+                            inputIndex, 0, sampleSize,
+                            extractor.sampleTime, 0
+                        )
+                        extractor.advance()
+                    }
                 }
             }
 
-            // --- Drain decoded PCM output ---
+            // --- Drain decoded PCM ---
             var outputIndex = codec.dequeueOutputBuffer(bufferInfo, 10_000L)
             while (outputIndex >= 0) {
-                val outputBuffer: ByteBuffer = codec.getOutputBuffer(outputIndex)!!
-                outputBuffer.order(ByteOrder.LITTLE_ENDIAN)
+                if (bufferInfo.size > 0) {
+                    val outputBuffer = codec.getOutputBuffer(outputIndex)!!
+                    outputBuffer.order(ByteOrder.LITTLE_ENDIAN)
+                    
+                    val shortBuffer = outputBuffer.asShortBuffer()
+                    val sampleCount = bufferInfo.size / 2
+                    val floatChunk = FloatArray(sampleCount)
+                    
+                    // Direct conversion to normalized float avoids storing shorts twice
+                    for (i in 0 until sampleCount) {
+                        floatChunk[i] = shortBuffer.get() / 32768.0f
+                    }
+                    
+                    floatChunks.add(floatChunk)
+                    totalSamples += sampleCount
+                }
 
-                // Android MediaCodec always outputs 16-bit PCM by default
-                while (outputBuffer.remaining() >= 2) {
-                    pcmSamples.add(outputBuffer.short)
+                // Check for end of stream flag on the output buffer
+                if ((bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                    outputEOS = true
                 }
 
                 codec.releaseOutputBuffer(outputIndex, false)
-                outputIndex = codec.dequeueOutputBuffer(bufferInfo, 0L)
+                
+                // Only loop draining if we aren't done
+                if (!outputEOS) {
+                    outputIndex = codec.dequeueOutputBuffer(bufferInfo, 0L)
+                } else {
+                    break
+                }
             }
         }
 
-        // Cleanup
         codec.stop()
         codec.release()
         extractor.release()
 
-        // Convert 16-bit PCM shorts -> normalized floats [-1.0, 1.0]
-        val fullData = FloatArray(pcmSamples.size) { i ->
-            pcmSamples[i] / 32768.0f
+        // Flatten the chunks into a single FloatArray efficiently
+        val fullData = FloatArray(totalSamples)
+        var offset = 0
+        for (chunk in floatChunks) {
+            chunk.copyInto(fullData, offset)
+            offset += chunk.size
         }
 
         return fullData
