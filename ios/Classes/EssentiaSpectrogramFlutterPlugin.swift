@@ -43,7 +43,7 @@ internal class MelSpectrogramCompute {
         numBands: Int,
         maxChunkSize: Int,
         minFreq: Int = 0,
-        maxFreq: Int = sampleRate / 2
+        maxFreq: Int? = nil
     ) -> [[Float]] {
         if audioSamples.count <= maxChunkSize {
             // If audio is small enough, process normally
@@ -55,7 +55,7 @@ internal class MelSpectrogramCompute {
                 hopSize: UInt(hopSize),
                 numBands: UInt(numBands),
                 minFreq: Double(minFreq),
-                maxFreq: Double(maxFreq)
+                maxFreq: maxFreq != nil ? Double(maxFreq!) : Double(sampleRate / 2)
             )
             return melSpec.map { $0.map { $0.floatValue } }
         }
@@ -85,7 +85,7 @@ internal class MelSpectrogramCompute {
                 hopSize: UInt(hopSize),
                 numBands: UInt(numBands),
                 minFreq: Double(minFreq),
-                maxFreq: Double(maxFreq)
+                maxFreq: maxFreq != nil ? Double(maxFreq!) : Double(sampleRate / 2)
 
             )
             
