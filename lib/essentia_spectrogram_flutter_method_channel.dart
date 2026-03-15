@@ -42,17 +42,10 @@ class MethodChannelEssentiaSpectrogramFlutter extends EssentiaSpectrogramFlutter
       'frameSize': frameSize,
       'hopSize': hopSize,
       'numBands': numBands,
+      'minFreq': minFreq ?? 0,
+      'maxFreq': maxFreq ?? (sampleRate / 2).floor(),
+      'maxChunkSize': maxChunkSize ?? sampleRate * 10,
     };
-    
-    if (maxChunkSize != null) {
-      arguments['maxChunkSize'] = maxChunkSize;
-    }
-    if (minFreq != null) {
-      arguments['minFreq'] = minFreq;
-    }
-    if (maxFreq != null) {
-      arguments['maxFreq'] = maxFreq;
-    }
 
     final result = await methodChannel
         .invokeMethod<List<dynamic>>('computeMelSpectrogram', arguments);
@@ -93,17 +86,10 @@ class MethodChannelEssentiaSpectrogramFlutter extends EssentiaSpectrogramFlutter
       'frameSize': frameSize,
       'hopSize': hopSize,
       'numBands': numBands,
+      'minFreq': minFreq ?? 0,
+      'maxFreq': maxFreq ?? (sampleRate / 2).floor(),
+      'maxChunkSize': maxChunkSize ?? sampleRate * 10,
     };
-    
-    if (maxChunkSize != null) {
-      arguments['maxChunkSize'] = maxChunkSize;
-    }
-    if (minFreq != null) {
-      arguments['minFreq'] = minFreq;
-    }
-    if (maxFreq != null) {
-      arguments['maxFreq'] = maxFreq;
-    }
 
     final result = await methodChannel
         .invokeMethod<List<dynamic>>('readAndComputeMelSpectrogram', arguments);

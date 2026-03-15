@@ -1,3 +1,10 @@
+#define MINIAUDIO_IMPLEMENTATION
+#define MA_NO_ENCODING
+#define MA_NO_DEVICE_IO
+#define MA_NO_ENGINE
+#define MA_NO_NODE_GRAPH
+#include "miniaudio.h"
+
 #include <jni.h>
 #include <android/log.h>
 #include <vector>
@@ -7,6 +14,7 @@
 #include "version.h"
 
 #define LOG_TAG "EssentiaBridge"
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
 using namespace essentia;
@@ -26,9 +34,9 @@ Java_one_beagile_essentia_1spectrogram_1flutter_NativeBridge_computeMelSpectrogr
     jint frameSize,
     jint hopSize,
     jint numBands,
-    jfloat minFreq,
-    jfloat maxFreq)
-{
+    jint minFreq,
+    jint maxFreq
+) {
 
     // 1. Init Essentia
     essentia::init();
@@ -115,4 +123,68 @@ Java_one_beagile_essentia_1spectrogram_1flutter_NativeBridge_computeMelSpectrogr
     }
 
     return result;
+}
+
+extern "C"
+JNIEXPORT jfloatArray JNICALL
+Java_one_beagile_essentia_1spectrogram_1flutter_NativeBridge_decode(
+    JNIEnv *env, jobject thiz,
+    jstring jFilePath, jint targetSampleRate
+) {
+    const char *filePath = env->GetStringUTFChars(jFilePath, nullptr);
+
+    // Configure decoder: output mono float32 at target sample rate
+    ma_decoder_config config = ma_decoder_config_init(
+        ma_format_f32,           // output format: 32-bit float
+        1,                       // output channels: mono
+        (ma_uint32)targetSampleRate
+    );
+
+    ma_decoder decoder;
+    ma_result result = ma_decoder_init_file(filePath, &config, &decoder);
+    if (result != MA_SUCCESS) {
+        LOGE("Failed to open file: %s (error %d)", filePath, result);
+        env->ReleaseStringUTFChars(jFilePath, filePath);
+        return nullptr;
+    }
+
+    // Get total frame count for pre-allocation
+    ma_uint64 totalFrames;
+    ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrames);
+
+    float *pcmData = nullptr;
+    ma_uint64 framesRead = 0;
+
+    if (totalFrames > 0) {
+        // Known length: single allocation, single read
+        pcmData = (float *)malloc(totalFrames * sizeof(float));
+        ma_decoder_read_pcm_frames(&decoder, pcmData, totalFrames, &framesRead);
+    } else {
+        // Unknown length (streaming format): read in chunks
+        ma_uint64 capacity = 1024 * 1024;  // start with ~1M samples
+        pcmData = (float *)malloc(capacity * sizeof(float));
+        framesRead = 0;
+
+        while (true) {
+            ma_uint64 chunkSize = 65536;
+            if (framesRead + chunkSize > capacity) {
+                capacity *= 2;
+                pcmData = (float *)realloc(pcmData, capacity * sizeof(float));
+            }
+            ma_uint64 read = 0;
+            ma_decoder_read_pcm_frames(&decoder, pcmData + framesRead, chunkSize, &read);
+            if (read == 0) break;
+            framesRead += read;
+        }
+    }
+
+    ma_decoder_uninit(&decoder);
+    env->ReleaseStringUTFChars(jFilePath, filePath);
+
+    // Copy to Java float array
+    jfloatArray jResult = env->NewFloatArray((jsize)framesRead);
+    env->SetFloatArrayRegion(jResult, 0, (jsize)framesRead, pcmData);
+    free(pcmData);
+
+    return jResult;
 }

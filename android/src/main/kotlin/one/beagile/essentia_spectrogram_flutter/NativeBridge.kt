@@ -21,7 +21,14 @@ object NativeBridge {
         frameSize: Int,
         hopSize: Int,
         numBands: Int,
-        minFreq: Float,
-        maxFreq: Float
+        minFreq: Int,
+        maxFreq: Int
     ): Array<FloatArray>
+
+    external fun decode(filePath: String, targetSampleRate: Int): FloatArray?
+
+    fun decodeAudioFile(filePath: String, sampleRate: Int = 44100): FloatArray {
+        return decode(filePath, sampleRate)
+            ?: throw IllegalStateException("Failed to decode: $filePath")
+    }
 }

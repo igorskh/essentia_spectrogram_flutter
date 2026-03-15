@@ -81,12 +81,8 @@ class EssentiaSpectrogramFlutterPlugin :
 
             executor.execute {
                 try {
-                    val waveform = AudioDecoder.decodeAudioFile(
-                        context,
-                        filePath
-                    )
-                    // Flutter's Result must be called on the platform (main) thread
-                    // MethodChannel handles marshalling automatically here
+                    val waveform = NativeBridge.decodeAudioFile(filePath)
+                    
                     result.success(waveform.toList())
                 } catch (e: Exception) {
                     result.error(
@@ -113,10 +109,13 @@ class EssentiaSpectrogramFlutterPlugin :
 
             executor.execute {
                 try {
-                    val waveform = AudioDecoder.decodeAudioFile(
-                        context,
-                        filePath
-                    )
+                    // val startTime = System.currentTimeMillis()
+                    
+                    val waveform = NativeBridge.decodeAudioFile(filePath, sampleRate)
+                    // var endTime = System.currentTimeMillis()
+                    // var duration = endTime - startTime
+                    // println("Waveform decoding time: $duration ms")
+
                     val melSpec = MelSpectrogramCompute.processChunked(
                         waveform,
                         sampleRate,
@@ -127,6 +126,10 @@ class EssentiaSpectrogramFlutterPlugin :
                         maxFreq,
                         maxChunkSize
                     )
+                    // endTime = System.currentTimeMillis()
+                    // duration = endTime - startTime
+                    // println("Mel spectrogram computation time: $duration ms")
+
                     result.success(melSpec)
                 } catch (e: Exception) {
                     result.error(

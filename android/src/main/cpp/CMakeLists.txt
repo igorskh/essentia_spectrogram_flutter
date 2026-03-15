@@ -12,7 +12,11 @@ set_target_properties(libessentia PROPERTIES
 )
 
 # Include headers from the .h files
-include_directories(${CMAKE_SOURCE_DIR}/include/essentia ${CMAKE_SOURCE_DIR}/include/eigen)
+include_directories(
+    ${CMAKE_SOURCE_DIR}/include/essentia
+    ${CMAKE_SOURCE_DIR}/include/eigen
+    ${CMAKE_SOURCE_DIR}/include/miniaudio
+)
 
 # Build your JNI bridge as a shared library
 add_library(

@@ -30,8 +30,8 @@ object MelSpectrogramCompute {
                 frameSize,
                 hopSize,
                 numBands,
-                minFreq.toFloat(),
-                maxFreq.toFloat()
+                minFreq,
+                maxFreq
             )
             return melSpec.map { it.toList() }
         }
@@ -62,8 +62,8 @@ object MelSpectrogramCompute {
                 frameSize,
                 hopSize,
                 numBands,
-                minFreq.toFloat(),
-                maxFreq.toFloat()
+                minFreq,
+                maxFreq
             )
 
             // Calculate how much of this chunk's result to keep
