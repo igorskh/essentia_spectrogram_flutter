@@ -12,49 +12,50 @@
 using namespace essentia;
 using namespace essentia::standard;
 
-
-extern "C"
-JNIEXPORT jstring JNICALL
-Java_one_beagile_essentia_1spectrogram_1flutter_NativeBridge_returnVersion(JNIEnv *env, jobject thiz) {
+extern "C" JNIEXPORT jstring JNICALL
+Java_one_beagile_essentia_1spectrogram_1flutter_NativeBridge_returnVersion(JNIEnv *env, jobject thiz)
+{
     return env->NewStringUTF(ESSENTIA_VERSION);
 }
 
-extern "C"
-JNIEXPORT jobjectArray JNICALL
+extern "C" JNIEXPORT jobjectArray JNICALL
 Java_one_beagile_essentia_1spectrogram_1flutter_NativeBridge_computeMelSpectrogram(
-        JNIEnv *env, jobject thiz,
-        jfloatArray audioSamples,
-        jint sampleRate,
-        jint frameSize,
-        jint hopSize,
-        jint numBands) {
+    JNIEnv *env, jobject thiz,
+    jfloatArray audioSamples,
+    jint sampleRate,
+    jint frameSize,
+    jint hopSize,
+    jint numBands,
+    jfloat minFreq,
+    jfloat maxFreq)
+{
 
     // 1. Init Essentia
     essentia::init();
 
     // 2. Convert Java float[] → std::vector<Real>
     jsize length = env->GetArrayLength(audioSamples);
-    jfloat* samples = env->GetFloatArrayElements(audioSamples, nullptr);
+    jfloat *samples = env->GetFloatArrayElements(audioSamples, nullptr);
     std::vector<Real> audio(samples, samples + length);
     env->ReleaseFloatArrayElements(audioSamples, samples, JNI_ABORT);
 
     // 3. Create algorithms
-    Algorithm* frameCutter = AlgorithmFactory::create("FrameCutter",
-                                            "frameSize", (int)frameSize,
-                                            "hopSize",   (int)hopSize,
-                                            "startFromZero", true);
+    Algorithm *frameCutter = AlgorithmFactory::create("FrameCutter",
+                                                      "frameSize", (int)frameSize,
+                                                      "hopSize", (int)hopSize,
+                                                      "startFromZero", true);
 
-    Algorithm* windowing = AlgorithmFactory::create("Windowing",
-                                          "type", "hann");
+    Algorithm *windowing = AlgorithmFactory::create("Windowing",
+                                                    "type", "hann");
 
-    Algorithm* spectrum = AlgorithmFactory::create("Spectrum",
-                                         "size", (int)frameSize);
+    Algorithm *spectrum = AlgorithmFactory::create("Spectrum",
+                                                   "size", (int)frameSize);
 
-    Algorithm* melBands = AlgorithmFactory::create("MelBands",
-                                         "sampleRate",        (int)sampleRate,
-                                         "numberBands",       (int)numBands,
-                                         "lowFrequencyBound", 0.0f,
-                                         "highFrequencyBound",(float)(sampleRate / 2));
+    Algorithm *melBands = AlgorithmFactory::create("MelBands",
+                                                   "sampleRate", (int)sampleRate,
+                                                   "numberBands", (int)numBands,
+                                                   "lowFrequencyBound", (float)minFreq,
+                                                   "highFrequencyBound", (float)maxFreq);
 
     // 4. Wire up FrameCutter input
     frameCutter->input("signal").set(audio);
@@ -65,11 +66,14 @@ Java_one_beagile_essentia_1spectrogram_1flutter_NativeBridge_computeMelSpectrogr
 
     frameCutter->output("frame").set(frame);
 
-    while (true) {
+    while (true)
+    {
         frameCutter->compute();
 
-        if (frame.empty()) break;
-        if ((int)frame.size() != frameSize) break; // skip last incomplete frame
+        if (frame.empty())
+            break;
+        if ((int)frame.size() != frameSize)
+            break; // skip last incomplete frame
 
         // Window
         windowing->input("frame").set(frame);
@@ -99,9 +103,10 @@ Java_one_beagile_essentia_1spectrogram_1flutter_NativeBridge_computeMelSpectrogr
     // 7. Convert result → Java float[][]
     jclass floatArrayClass = env->FindClass("[F");
     jobjectArray result = env->NewObjectArray(
-            (jsize)melSpectrogram.size(), floatArrayClass, nullptr);
+        (jsize)melSpectrogram.size(), floatArrayClass, nullptr);
 
-    for (int i = 0; i < (int)melSpectrogram.size(); i++) {
+    for (int i = 0; i < (int)melSpectrogram.size(); i++)
+    {
         jfloatArray row = env->NewFloatArray((jsize)melSpectrogram[i].size());
         env->SetFloatArrayRegion(row, 0,
                                  (jsize)melSpectrogram[i].size(), melSpectrogram[i].data());

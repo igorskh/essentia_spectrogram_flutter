@@ -27,7 +27,9 @@
                                                              sampleRate:(double)sampleRate
                                                              frameSize:(NSUInteger)frameSize
                                                                hopSize:(NSUInteger)hopSize
-                                                               numBands:(NSUInteger)numBands {
+                                                               numBands:(NSUInteger)numBands 
+                                                               minFreq:(double)minFreq
+                                                               maxFreq:(double)maxFreq {
     
     essentia::init();
 
@@ -48,8 +50,8 @@
     essentia::standard::Algorithm* melBands = essentia::standard::AlgorithmFactory::create("MelBands",
         "sampleRate",        (int)sampleRate,
         "numberBands",       (int)numBands,
-        "lowFrequencyBound", 0.0f,
-        "highFrequencyBound",(float)(sampleRate / 2.0));
+        "lowFrequencyBound", (double)minFreq,
+        "highFrequencyBound",(double)maxFreq);
 
     // 4. Wire up FrameCutter input
     frameCutter->input("signal").set(audio);

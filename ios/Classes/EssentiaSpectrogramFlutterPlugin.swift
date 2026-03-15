@@ -41,7 +41,9 @@ internal class MelSpectrogramCompute {
         frameSize: Int,
         hopSize: Int,
         numBands: Int,
-        maxChunkSize: Int
+        maxChunkSize: Int,
+        minFreq: Int = 0,
+        maxFreq: Int = sampleRate / 2
     ) -> [[Float]] {
         if audioSamples.count <= maxChunkSize {
             // If audio is small enough, process normally
@@ -51,7 +53,9 @@ internal class MelSpectrogramCompute {
                 sampleRate: Double(sampleRate),
                 frameSize: UInt(frameSize),
                 hopSize: UInt(hopSize),
-                numBands: UInt(numBands)
+                numBands: UInt(numBands),
+                minFreq: Double(minFreq),
+                maxFreq: Double(maxFreq)
             )
             return melSpec.map { $0.map { $0.floatValue } }
         }
@@ -79,7 +83,10 @@ internal class MelSpectrogramCompute {
                 sampleRate: Double(sampleRate),
                 frameSize: UInt(frameSize),
                 hopSize: UInt(hopSize),
-                numBands: UInt(numBands)
+                numBands: UInt(numBands),
+                minFreq: Double(minFreq),
+                maxFreq: Double(maxFreq)
+
             )
             
             // Calculate how much of this chunk's result to keep
@@ -138,6 +145,8 @@ public class EssentiaSpectrogramFlutterPlugin: NSObject, FlutterPlugin {
             }
             // read optional arguments
             let maxChunkSize = args["maxChunkSize"] as? Int ?? sampleRate * 30
+            let minFreq = args["minFreq"] as? Int ?? 0
+            let maxFreq = args["maxFreq"] as? Int ?? sampleRate / 2
             
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
@@ -148,7 +157,9 @@ public class EssentiaSpectrogramFlutterPlugin: NSObject, FlutterPlugin {
                         frameSize: frameSize,
                         hopSize: hopSize,
                         numBands: numBands,
-                        maxChunkSize: maxChunkSize
+                        maxChunkSize: maxChunkSize,
+                        minFreq: minFreq,
+                        maxFreq: maxFreq
                     )
                     result(melSpec)
                 } catch {
@@ -174,7 +185,9 @@ public class EssentiaSpectrogramFlutterPlugin: NSObject, FlutterPlugin {
                     frameSize: frameSize,
                     hopSize: hopSize,
                     numBands: numBands,
-                    maxChunkSize: maxChunkSize
+                    maxChunkSize: maxChunkSize,
+                    minFreq: args["minFreq"] as? Int ?? 0,
+                    maxFreq: args["maxFreq"] as? Int ?? sampleRate / 2
                 )
                 result(melSpec)
             }

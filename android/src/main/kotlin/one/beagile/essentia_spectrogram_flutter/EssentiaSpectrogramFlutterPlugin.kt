@@ -20,6 +20,10 @@ class EssentiaSpectrogramFlutterPlugin :
     private lateinit var channel: MethodChannel
     private lateinit var context: Context
 
+    private val computePool = Executors.newFixedThreadPool(
+        Runtime.getRuntime().availableProcessors().coerceAtLeast(2)
+    )
+
     private val executor = Executors.newSingleThreadExecutor()
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -43,6 +47,8 @@ class EssentiaSpectrogramFlutterPlugin :
             val hopSize = call.argument<Int>("hopSize")!!
             val numBands = call.argument<Int>("numBands")!!
             val maxChunkSize = call.argument<Int>("maxChunkSize") ?: (sampleRate * 30) // Default: 30 seconds
+            var minFreq = call.argument<Int>("minFreq") ?: 0 // Default: 0 Hz
+            var maxFreq = call.argument<Int>("maxFreq") ?: (sampleRate / 2) // Default: Nyquist frequency
             
             executor.execute {
                 try {
@@ -52,6 +58,8 @@ class EssentiaSpectrogramFlutterPlugin :
                         frameSize,
                         hopSize,
                         numBands,
+                        minFreq,
+                        maxFreq,
                         maxChunkSize
                     )
                     result.success(melSpec)
@@ -95,6 +103,8 @@ class EssentiaSpectrogramFlutterPlugin :
             val hopSize = call.argument<Int>("hopSize")!!
             val numBands = call.argument<Int>("numBands")!!
             val maxChunkSize = call.argument<Int>("maxChunkSize") ?: (sampleRate * 30) // Default: 30 seconds
+            var minFreq = call.argument<Int>("minFreq") ?: 0 // Default: 0 Hz
+            var maxFreq = call.argument<Int>("maxFreq") ?: (sampleRate / 2) // Default: Nyquist frequency
 
             if (filePath.isNullOrBlank()) {
                 result.error("INVALID_ARGUMENT", "filePath is required", null)
@@ -113,6 +123,8 @@ class EssentiaSpectrogramFlutterPlugin :
                         frameSize,
                         hopSize,
                         numBands,
+                        minFreq,
+                        maxFreq,
                         maxChunkSize
                     )
                     result.success(melSpec)
@@ -132,5 +144,6 @@ class EssentiaSpectrogramFlutterPlugin :
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
         executor.shutdown()
+        computePool.shutdown()
     }
 }

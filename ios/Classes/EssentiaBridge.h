@@ -19,7 +19,9 @@ NS_ASSUME_NONNULL_BEGIN
                                                              sampleRate:(double)sampleRate
                                                              frameSize:(NSUInteger)frameSize
                                                                hopSize:(NSUInteger)hopSize
-                                                               numBands:(NSUInteger)numBands;
+                                                               numBands:(NSUInteger)numBands
+                                                               minFreq:(double)minFreq
+                                                               maxFreq:(double)maxFreq;
 
 @end
 

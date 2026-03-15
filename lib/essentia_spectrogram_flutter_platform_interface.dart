@@ -39,6 +39,8 @@ abstract class EssentiaSpectrogramFlutterPlatform extends PlatformInterface {
     required int hopSize,
     required int numBands,
     int? maxChunkSize,
+    int? minFreq,
+    int? maxFreq,
   }) {
     throw UnimplementedError(
       'computeMelSpectrogram() has not been implemented.',
@@ -58,6 +60,8 @@ abstract class EssentiaSpectrogramFlutterPlatform extends PlatformInterface {
     required int hopSize,
     required int numBands,
     int? maxChunkSize,
+    int? minFreq,
+    int? maxFreq,
   }) {
     throw UnimplementedError(
       'readAndComputeMelSpectrogram() has not been implemented.',

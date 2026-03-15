@@ -16,6 +16,8 @@ class EssentiaSpectrogramFlutter {
     required int hopSize,
     required int numBands,
     int? maxChunkSize,
+    int? minFreq,
+    int? maxFreq,
   }) {
     return EssentiaSpectrogramFlutterPlatform.instance.computeMelSpectrogram(
       audioSamples: audioSamples,
@@ -24,6 +26,8 @@ class EssentiaSpectrogramFlutter {
       hopSize: hopSize,
       numBands: numBands,
       maxChunkSize: maxChunkSize,
+      minFreq: minFreq,
+      maxFreq: maxFreq,
     );
   }
 
@@ -44,6 +48,8 @@ class EssentiaSpectrogramFlutter {
     required int hopSize,
     required int numBands,
     int? maxChunkSize,
+    int? minFreq,
+    int? maxFreq,
   }) {
     return EssentiaSpectrogramFlutterPlatform.instance.readAndComputeMelSpectrogram(
       filePath: filePath,
@@ -52,6 +58,8 @@ class EssentiaSpectrogramFlutter {
       hopSize: hopSize,
       numBands: numBands,
       maxChunkSize: maxChunkSize,
+      minFreq: minFreq,
+      maxFreq: maxFreq,
     );
   }
 }

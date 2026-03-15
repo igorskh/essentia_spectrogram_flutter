@@ -20,6 +20,8 @@ object NativeBridge {
         sampleRate: Int,
         frameSize: Int,
         hopSize: Int,
-        numBands: Int
+        numBands: Int,
+        minFreq: Float,
+        maxFreq: Float
     ): Array<FloatArray>
 }

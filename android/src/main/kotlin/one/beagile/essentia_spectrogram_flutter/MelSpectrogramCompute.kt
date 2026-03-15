@@ -18,6 +18,8 @@ object MelSpectrogramCompute {
         frameSize: Int,
         hopSize: Int,
         numBands: Int,
+        minFreq: Int,
+        maxFreq: Int,
         maxChunkSize: Int
     ): List<List<Float>> {
         if (audioSamples.size <= maxChunkSize) {
@@ -27,7 +29,9 @@ object MelSpectrogramCompute {
                 sampleRate,
                 frameSize,
                 hopSize,
-                numBands
+                numBands,
+                minFreq.toFloat(),
+                maxFreq.toFloat()
             )
             return melSpec.map { it.toList() }
         }
@@ -57,7 +61,9 @@ object MelSpectrogramCompute {
                 sampleRate,
                 frameSize,
                 hopSize,
-                numBands
+                numBands,
+                minFreq.toFloat(),
+                maxFreq.toFloat()
             )
 
             // Calculate how much of this chunk's result to keep

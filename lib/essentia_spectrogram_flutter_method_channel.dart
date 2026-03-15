@@ -31,6 +31,8 @@ class MethodChannelEssentiaSpectrogramFlutter extends EssentiaSpectrogramFlutter
     required int hopSize,
     required int numBands,
     int? maxChunkSize,
+    int? minFreq,
+    int? maxFreq,
   }) async {
     final samples = Float32List.fromList(audioSamples);
 
@@ -44,6 +46,12 @@ class MethodChannelEssentiaSpectrogramFlutter extends EssentiaSpectrogramFlutter
     
     if (maxChunkSize != null) {
       arguments['maxChunkSize'] = maxChunkSize;
+    }
+    if (minFreq != null) {
+      arguments['minFreq'] = minFreq;
+    }
+    if (maxFreq != null) {
+      arguments['maxFreq'] = maxFreq;
     }
 
     final result = await methodChannel
@@ -76,6 +84,8 @@ class MethodChannelEssentiaSpectrogramFlutter extends EssentiaSpectrogramFlutter
     required int hopSize,
     required int numBands,
     int? maxChunkSize,
+    int? minFreq,
+    int? maxFreq,
   }) async {
     final arguments = {
       'filePath': filePath,
@@ -87,6 +97,12 @@ class MethodChannelEssentiaSpectrogramFlutter extends EssentiaSpectrogramFlutter
     
     if (maxChunkSize != null) {
       arguments['maxChunkSize'] = maxChunkSize;
+    }
+    if (minFreq != null) {
+      arguments['minFreq'] = minFreq;
+    }
+    if (maxFreq != null) {
+      arguments['maxFreq'] = maxFreq;
     }
 
     final result = await methodChannel
