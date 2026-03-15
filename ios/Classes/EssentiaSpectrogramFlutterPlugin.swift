@@ -1,4 +1,5 @@
 import Flutter
+import AVFoundation
 import UIKit
 
 internal class AudioLoader {
