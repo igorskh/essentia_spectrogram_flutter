@@ -1,6 +1,6 @@
 name: essentia_spectrogram_flutter
 description: "A Flutter plugin for generating spectrograms using the Essentia library."
-version: 0.0.2
+version: 0.0.3
 homepage:
 
 environment:
