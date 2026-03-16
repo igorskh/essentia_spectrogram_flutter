@@ -7,6 +7,8 @@
 // https://flutter.dev/to/integration-testing
 import 'dart:io';
 
+import 'package:essentia_spectrogram_flutter/mel_spectrogram_plot.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -22,8 +24,8 @@ void printMemory(String label) {
   print('[$label] RSS: ${mb}MB');
 }
 
-void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+Future<void> main() async {
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('getPlatformVersion test', (WidgetTester tester) async {
     final EssentiaSpectrogramFlutter plugin = EssentiaSpectrogramFlutter();
@@ -34,8 +36,8 @@ void main() {
   });
 
   testWidgets('readAndComputeMelSpectrogram from wav test', (
-      WidgetTester tester,
-      ) async {
+    WidgetTester tester,
+  ) async {
     printMemory("before EssentiaFlutter");
     final EssentiaSpectrogramFlutter plugin = EssentiaSpectrogramFlutter();
     printMemory("after EssentiaFlutter");
@@ -67,8 +69,34 @@ void main() {
   });
 
   testWidgets('readAndComputeMelSpectrogram from mp3 test', (
-      WidgetTester tester,
-      ) async {
+    WidgetTester tester,
+  ) async {
+    final EssentiaSpectrogramFlutter plugin = EssentiaSpectrogramFlutter();
+
+    final outPath = p.join(
+      (await getTemporaryDirectory()).path,
+      'waveform.mp3',
+    );
+    final audioFile = File(outPath);
+    await audioFile.writeAsBytes(
+      (await rootBundle.load('assets/test_44k.mp3')).buffer.asUint8List(),
+    );
+
+    final sampleRate = 44100;
+    final numBands = 50;
+    var spec = await plugin.readAndComputeMelSpectrogram(
+      filePath: outPath,
+      sampleRate: sampleRate,
+      frameSize: 2048,
+      hopSize: 256,
+      numBands: numBands,
+      maxChunkSize: sampleRate * 5,
+    );
+    expect(spec.length, greaterThan(0));
+    expect(spec[0].length, equals(numBands));
+  });
+
+  testWidgets('MelSpectrogramPlot test', (WidgetTester tester) async {
     final EssentiaSpectrogramFlutter plugin = EssentiaSpectrogramFlutter();
 
     final outPath = p.join(
@@ -91,7 +119,52 @@ void main() {
       maxChunkSize: sampleRate * 5,
     );
 
-    expect(spec.length, greaterThan(0));
-    expect(spec[0].length, equals(numBands));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(child: MelSpectrogramPlot(spectrogram: spec)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await binding.convertFlutterSurfaceToImage();
+    await tester.pumpAndSettle();
+    await binding.takeScreenshot('test_44k.mp3');
+  });
+
+  testWidgets('MelSpectrogramPlot 2 test', (WidgetTester tester) async {
+    final EssentiaSpectrogramFlutter plugin = EssentiaSpectrogramFlutter();
+
+    final outPath = p.join(
+      (await getTemporaryDirectory()).path,
+      'waveform.wav',
+    );
+    final audioFile = File(outPath);
+    await audioFile.writeAsBytes(
+      (await rootBundle.load('assets/test_large_96k.wav')).buffer.asUint8List(),
+    );
+
+    final sampleRate = 44100;
+    final numBands = 50;
+    var spec = await plugin.readAndComputeMelSpectrogram(
+      filePath: outPath,
+      sampleRate: sampleRate,
+      frameSize: 2048,
+      hopSize: 256,
+      numBands: numBands,
+      maxChunkSize: sampleRate * 5,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(child: MelSpectrogramPlot(spectrogram: spec)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await binding.convertFlutterSurfaceToImage();
+    await tester.pumpAndSettle();
+    await binding.takeScreenshot('test_large_96k.wav');
   });
 }
